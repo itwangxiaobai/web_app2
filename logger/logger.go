@@ -3,7 +3,6 @@ package logger
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/natefinch/lumberjack"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"net"
@@ -13,19 +12,24 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
+	"web_app/settings"
 )
 
 // Init 初始化Logger
-func Init() (err error) {
+func Init(cfg *settings.LogConfig) (err error) {
 	writeSyncer := getLogWriter(
-		viper.GetString("log.filename"),
-		viper.GetInt("log.max_size"),
-		viper.GetInt("log.max_age"),
-		viper.GetInt("log.max_backups"),
+		//viper.GetString("log.filename"),
+		//viper.GetInt("log.max_size"),
+		//viper.GetInt("log.max_age"),
+		//viper.GetInt("log.max_backups"),
+		cfg.Filename,
+		cfg.MaxSize,
+		cfg.MaxAge,
+		cfg.MaxBackups,
 	)
 	encoder := getEncoder()
 	var l = new(zapcore.Level)
-	err = l.UnmarshalText([]byte(viper.GetString("log.level")))
+	err = l.UnmarshalText([]byte(cfg.Level))
 	if err != nil {
 		return
 	}
@@ -57,7 +61,7 @@ func getEncoder() zapcore.Encoder {
 	return zapcore.NewJSONEncoder(encoderConfig)
 }
 
-//GinLogger 接受gin框架默认的日志
+// GinLogger 接受gin框架默认的日志
 func GinLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
@@ -79,7 +83,7 @@ func GinLogger() gin.HandlerFunc {
 	}
 }
 
-//GinRecovery recover掉项目可能出现的panic，并使用zap记录相关日志
+// GinRecovery recover掉项目可能出现的panic，并使用zap记录相关日志
 func GinRecovery(stack bool) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {
